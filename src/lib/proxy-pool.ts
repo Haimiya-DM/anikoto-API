@@ -209,6 +209,8 @@ const TRUSTED_REFERER_ROOTS = [
 const DEFAULT_ALLOWED_STREAM_DOMAINS = [
   'cdn.imgnex.top',
   '*.imgnex.top',
+  'fetch.nexabloom.top',
+  '*.nexabloom.top',
   '*.snapcdn.top',
   '*.akamaized.net',
   '*.tiktokcdn.com',

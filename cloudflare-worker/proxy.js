@@ -145,6 +145,8 @@ const TRUSTED_REFERER_ROOTS = [
 const DEFAULT_ALLOWED_STREAM_PATTERNS = [
   'cdn.imgnex.top',
   '*.imgnex.top',
+  'fetch.nexabloom.top',
+  '*.nexabloom.top',
   '*.snapcdn.top',
   '*.akamaized.net',
   '*.tiktokcdn.com',
@@ -250,6 +252,11 @@ function remapMirrorUrl(urlStr) {
     const host = parsed.hostname.toLowerCase();
     const pathname = parsed.pathname;
 
+    if ((host === 'fetch.nexabloom.top' || host === 'cdn.imgnex.top') && pathname.endsWith('master.m3u8')) {
+      parsed.host = 'ncdn.imgnex.top';
+      return parsed.toString();
+    }
+
     if (host === 'bb.akirax.buzz' && pathname.startsWith('/anime/')) {
       parsed.host = 'cdn.imgnex.top';
       return parsed.toString();
@@ -267,7 +274,7 @@ function remapMirrorUrl(urlStr) {
 
     const isDeadBuzz = host.includes('zaplume.buzz') || host.includes('mewstream.buzz');
     if (isDeadBuzz || (host.endsWith('.click') && !host.includes('akirax.buzz'))) {
-      parsed.host = 'cdn.imgnex.top';
+      parsed.host = pathname.endsWith('master.m3u8') ? 'ncdn.imgnex.top' : 'cdn.imgnex.top';
       return parsed.toString();
     }
 
@@ -377,10 +384,11 @@ export default {
         if (upstreamRes.status === 404 || upstreamRes.status === 429 || upstreamRes.status === 403) {
           try {
             const parsed = new URL(targetUrl);
-            if (parsed.host !== 'cdn.imgnex.top' && parsed.pathname.startsWith('/anime/')) {
-              parsed.host = 'cdn.imgnex.top';
-              const fallbackUrl = parsed.toString();
-              if (fallbackUrl !== targetUrl) {
+            if (parsed.pathname.startsWith('/anime/')) {
+              const fallbackHost = parsed.pathname.endsWith('master.m3u8') ? 'ncdn.imgnex.top' : 'cdn.imgnex.top';
+              if (parsed.host !== fallbackHost) {
+                parsed.host = fallbackHost;
+                const fallbackUrl = parsed.toString();
                 const fbRes = await fetch(fallbackUrl, fetchOptions);
                 if (fbRes.ok) {
                   upstreamRes = fbRes;

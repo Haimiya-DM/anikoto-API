@@ -29,27 +29,91 @@ function parseEpisodeStatus($el: cheerio.Cheerio<AnyNode>): EpisodeStatus {
 
 function parseSpotlight($: cheerio.CheerioAPI): SpotlightAnime[] {
   const results: SpotlightAnime[] = [];
-  $('#hotest .swiper-slide.item').each((_, el) => {
+  $('#hotest .swiper-slide, .hotest .swiper-slide').each((_, el) => {
     const $el = $(el);
-    const bgStyle = $el.find('.image div').attr('style') ?? '';
-    const imageMatch = bgStyle.match(/url\(['"]?(.+?)['"]?\)/);
 
-    const watchUrl = $el.find('.actions a.play').attr('href') ?? '';
-    const slug = watchUrl.replace(/^https?:\/\/[^/]+/, '').replace(/^\/watch\//, '').replace(/\/ep-\d+$/, '').replace(/\/$/, '');
+    // Image: .cover img (new layout), img tag, or background-image in .image div / .cover (old layout)
+    let image = $el.find('.cover img').attr('src')
+      || $el.find('img').first().attr('src')
+      || '';
+
+    if (!image) {
+      const bgStyle = $el.find('.cover, .image div, .cover div').attr('style') ?? $el.attr('style') ?? '';
+      const imageMatch = bgStyle.match(/url\(['"]?(.+?)['"]?\)/);
+      if (imageMatch) image = imageMatch[1];
+    }
+    image = image.replace(/^[\["']+|[\]"']+$/g, '').trim();
+
+    // Watch URL & Slug
+    const rawWatchUrl = $el.find('.ak-btns a').attr('href')
+      || $el.find('.actions a.play, a.btn').attr('href')
+      || $el.find('a[href*="/watch/"]').attr('href')
+      || '';
+    const watchUrl = rawWatchUrl.replace(/^[\["']+|[\]"']+$/g, '').trim();
+    const slug = watchUrl
+      .replace(/^https?:\/\/[^/]+/, '')
+      .replace(/^\/watch\//, '')
+      .replace(/\/ep-\d+$/, '')
+      .replace(/\/$/, '');
+
+    // Title & Japanese title
+    const $titleEl = $el.find('.ak-title, .title, h2').first();
+    const title = $titleEl.text().trim();
+    if (!title && !slug) return;
+
+    const titleJp = $titleEl.attr('data-jp')?.trim() || undefined;
+
+    // Rank from .ak-sub (e.g., "#1 Spotlight")
+    const subText = $el.find('.ak-sub').text().trim();
+    const rankMatch = subText.match(/#(\d+)/);
+    const rank = rankMatch ? parseInt(rankMatch[1], 10) : undefined;
+
+    // Details: type, date, rating, quality, episodes
+    let type: string | undefined = undefined;
+    let date: string | undefined = $el.find('.meta .date').text().trim() || undefined;
+    let rating: string | undefined = $el.find('.meta .rating').text().trim() || undefined;
+    let quality: string | undefined = $el.find('.meta .quality').text().trim() || undefined;
+    let episodes: string | undefined = undefined;
+
+    // Parse .ak-detail (new format)
+    $el.find('.ak-detail .it').each((_, itEl) => {
+      const $it = $(itEl);
+      const text = $it.text().trim();
+      if (!text) return;
+
+      if ($it.find('.fa-play-circle, .fa-circle-play, .fa-play').length > 0) {
+        type = text;
+      } else if ($it.find('.fa-calendar, .fa-calendar-days').length > 0) {
+        date = text;
+      } else if ($it.find('.fa-star').length > 0) {
+        rating = text;
+      } else if ($it.find('.fa-film').length > 0) {
+        episodes = text;
+      } else if (!type && /^(TV|Movie|OVA|ONA|Special|TV_SHORT|TV Special)$/i.test(text)) {
+        type = text;
+      }
+    });
+
+    const hasDub = $el.find('.meta .dub, .ep-status.dub, span.dub').length > 0;
+    const hasSub = $el.find('.meta .sub, .ep-status.sub, span.sub').length > 0;
+    const synopsis = $el.find('.ak-desc, .synopsis').text().trim() || undefined;
 
     results.push({
+      rank,
       slug,
-      title: $el.find('.title').text().trim(),
-      titleJp: $el.find('.title').attr('data-jp')?.trim(),
-      rating: $el.find('.meta .rating').text().trim() || undefined,
-      quality: $el.find('.meta .quality').text().trim() || undefined,
-      hasDub: $el.find('.meta .dub').length > 0,
-      hasSub: $el.find('.meta .sub').length > 0,
-      date: $el.find('.meta .date').text().trim() || undefined,
-      synopsis: $el.find('.synopsis').text().trim() || undefined,
+      title,
+      titleJp,
+      rating,
+      quality,
+      type,
+      episodes,
+      hasDub,
+      hasSub,
+      date,
+      synopsis,
       watchUrl,
       href: `/api/anime/${slug}`,
-      image: imageMatch?.[1] ?? '',
+      image,
     });
   });
   return results;

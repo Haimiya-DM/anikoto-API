@@ -1071,32 +1071,42 @@ components:
     SpotlightAnime:
       type: object
       properties:
+        rank:
+          type: integer
+          example: 1
         slug:
           type: string
-          example: "solo-leveling-season-2-arise-from-the-shadow-vvy1z"
+          example: "black-clover-season-2"
         title:
           type: string
-          example: "Solo Leveling Season 2 -Arise from the Shadow-"
+          example: "Black Clover Season 2"
         titleJp:
           type: string
+          example: "Black Clover 2nd Season"
         rating:
           type: string
-          example: "PG-13"
+          example: "7.84"
         quality:
           type: string
           example: "HD"
+        type:
+          type: string
+          example: "TV"
+        episodes:
+          type: string
+          example: "170 eps"
         hasDub:
           type: boolean
-          example: true
+          example: false
         hasSub:
           type: boolean
-          example: true
+          example: false
         date:
           type: string
-          example: "Jan 2025"
+          example: "2026"
         synopsis:
           type: string
-          example: "Sung Jinwoo continues his ascent as the world's strongest hunter..."
+          example: "The second season of Black Clover."
         watchUrl:
           type: string
           example: "https://anikoto.net/watch/solo-leveling-season-2-arise-from-the-shadow-vvy1z"

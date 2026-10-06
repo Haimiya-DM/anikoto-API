@@ -26,8 +26,11 @@ export interface SpotlightAnime {
   slug: string;
   title: string;
   titleJp?: string;
+  rank?: number;
   rating?: string;
   quality?: string;
+  type?: string;
+  episodes?: string;
   hasDub?: boolean;
   hasSub?: boolean;
   date?: string;
